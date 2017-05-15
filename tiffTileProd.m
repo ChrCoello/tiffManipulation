@@ -117,18 +117,18 @@ if ~isempty(filenames),
             newTiffObj = Tiff(newFile,'w');
             setTag(newTiffObj,'ImageLength',tiffInfo.TileLength);
             setTag(newTiffObj,'ImageWidth',tiffInfo.TileWidth);
-            setTag(newTiffObj,'Photometric',Tiff.Photometric.RGB);
+            setTag(newTiffObj,'Photometric',newTiffObj.Photometric.(tiffInfo.PhotometricInterpretation));
             setTag(newTiffObj,'BitsPerSample',max(tiffInfo.BitsPerSample));
             setTag(newTiffObj,'SamplesPerPixel',tiffInfo.SamplesPerPixel);
+            setTag(newTiffObj,'Compression',newTiffObj.Compression.(tiffInfo.Compression))
+            setTag(newTiffObj,'MinSampleValue',min(tiffInfo.MinSampleValue));
+            setTag(newTiffObj,'MaxSampleValue',max(tiffInfo.MaxSampleValue));
+%             setTag(newTiffObj,'TileWidth',tiffInfo.TileWidth);
+%             setTag(newTiffObj,'TileLength',tiffInfo.TileLength);
             setTag(newTiffObj,'XResolution',tiffInfo.XResolution);
             setTag(newTiffObj,'YResolution',tiffInfo.YResolution);
-            setTag(newTiffObj,'ResolutionUnit',Tiff.ResolutionUnit.Centimeter);
-            setTag(newTiffObj,'Compression',Tiff.Compression.LZW)
-            %             setTag(newTiffObj,'MinSampleValue',min(tiffInfo.MinSampleValue));
-            %             setTag(newTiffObj,'MaxSampleValue',max(tiffInfo.MaxSampleValue));
-            %             setTag(newTiffObj,'TileWidth',tiffInfo.TileWidth);
-            %             setTag(newTiffObj,'TileLength',tiffInfo.TileLength);
-            setTag(newTiffObj,'PlanarConfiguration',Tiff.PlanarConfiguration.Chunky);
+            setTag(newTiffObj,'ResolutionUnit',newTiffObj.ResolutionUnit.(tiffInfo.ResolutionUnit));
+            setTag(newTiffObj,'PlanarConfiguration',newTiffObj.PlanarConfiguration.(tiffInfo.PlanarConfiguration));
             %
             newTiffObj.write(tileDataRaw{iL}); %#ok<*AGROW>
         end
