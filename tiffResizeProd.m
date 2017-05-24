@@ -35,6 +35,7 @@ p = inputParser;
 defaultRefIm  = '';
 defaultImSize = 1;  % scalar or vector
 defaultSufIm  = 'resize';
+defaultOutFmt = '';
 %
 defaultInterp  = 'nearest';
 expectedInterp = {'nearest','bilinear','bicubic','box','lanczos2','lanczos3'};
@@ -43,6 +44,7 @@ addRequired(p,'input',@ischar);
 addRequired(p,'output',@ischar);
 addParameter(p,'refIm',defaultRefIm,@ischar);
 addParameter(p,'sufIm',defaultSufIm,@ischar);
+addParameter(p,'outfmt',defaultOutFmt,@ischar);
 addParameter(p,'imSize',defaultImSize,@isnumeric);
 addParameter(p,'interp',defaultInterp,@(x) any(validatestring(x,expectedInterp)));
 %
@@ -51,8 +53,8 @@ parse(p,input,output,varargin{:});
 % Check existence of inputs
 %%% Check on the input
 formatsAvail = imformats();
-if isdir(input),
-    if ~exist(input,'dir'),
+if isdir(input)
+    if ~exist(input,'dir')
         error('TiffAdjProd:MissingDir','The directory %s cannot be found',input);
     else
         % Search directory for .tiff or tif files
@@ -69,16 +71,16 @@ if isdir(input),
 else
     % Check if it was just the extension that was missing
     [pIn,fnIn,extIn] = fileparts(input);
-    if ~exist(input,'file'),
-        if isempty(extIn),
+    if ~exist(input,'file')
+        if isempty(extIn)
             % Find the file
-            if isempty(pIn),
+            if isempty(pIn)
                 pIn = pwd;
             end
             DirContent = dir(pIn);
             fN = DirContent(~cellfun('isempty',strfind({DirContent(:).name},fnIn))).name;
             [pIn2,fnIn2,extIn2] = fileparts(fN);           
-            if ismember(extIn2(2:end),[formatsAvail(:).ext]), % 2 for removeing the initial dot
+            if ismember(extIn2(2:end),[formatsAvail(:).ext]) % 2 for removeing the initial dot
                 % Good that is what we wanted to find : tif extension
                 % forgotten in the input
                 filenames = {fullfile(pIn2,sprintf('%s%s',fnIn2,extIn2))};
@@ -94,8 +96,8 @@ else
     end
 end
 % Check output
-if ~isempty(p.Results.refIm),
-    if ~exist(p.Results.refIm,'file'),
+if ~isempty(p.Results.refIm)
+    if ~exist(p.Results.refIm,'file')
         error('MATLAB:resizeImages:FileNotFound','Couldn''t find the file %s',p.Results.refIm);
     else
         Ref    = imfinfo(p.Results.refIm);
@@ -107,7 +109,7 @@ end
 %
 nFiles = length(filenames);
 %
-for idxFile = 1 : nFiles,
+for idxFile = 1 : nFiles
     %
     [pInL,fnInL,extInL] = fileparts(filenames{idxFile});
     fprintf(1,'%s\n',repmat('-',1,50));
@@ -150,28 +152,34 @@ for idxFile = 1 : nFiles,
     scaledData = imresize(inData,outputSize,p.Results.interp);
     % Prepare and write output
     sufIm = p.Results.sufIm;
-    if isdir(output),
-        outIm = fullfile(output,sprintf('%s_%s%s',fnInL,sufIm,extInL));
+    if ~isempty(p.Results.outfmt)
+        extOut = ['.' p.Results.outfmt];
     else
-        if isempty(output),
-            outIm = fullfile(pInL,sprintf('%s_%s%s',fnInL,sufIm,extInL));
+        extOut = extInL;
+    end
+    if isdir(output)
+        outIm = fullfile(output,sprintf('%s_%s%s',fnInL,sufIm,extOut));
+    else
+        if isempty(output)
+            outIm = fullfile(pInL,sprintf('%s_%s%s',fnInL,sufIm,extOut));
         else
-            [pOut,fOut,extOut]=fileparts(output);
-            if ~isempty(pOut) && ~exist(pOut,'dir'),
+            [pOut,fOut,extOutt]=fileparts(output);
+            if ~isempty(pOut) && ~exist(pOut,'dir')
                 mkdir(pOut);
             end
-            if isempty(pOut),
+            if isempty(pOut)
                 pOut = pInL;
             end
-            if isempty(extOut),
-                outIm = fullfile(pOut,sprintf('%s%s',fOut,extInL));
-            else
+            
+            if isempty(extOutt)
                 outIm = fullfile(pOut,sprintf('%s%s',fOut,extOut));
+            else
+                outIm = fullfile(pOut,sprintf('%s%s',fOut,extOutt));
             end
         end
     end
     %
-    if strcmp(InInfo.Format,'tif'),
+    if strcmp(extOut,'.tif')
         newTiffObj = Tiff(outIm,'w');
         setTag(newTiffObj,'ImageLength',outputSize(1));
         setTag(newTiffObj,'ImageWidth',outputSize(2));
