@@ -37,7 +37,7 @@ defaultImSize = 1;  % scalar or vector
 defaultSufIm  = 'resize';
 defaultOutFmt = '';
 %
-defaultInterp  = 'nearest';
+defaultInterp  = 'bicubic';
 expectedInterp = {'nearest','bilinear','bicubic','box','lanczos2','lanczos3'};
 %
 addRequired(p,'input',@ischar);
