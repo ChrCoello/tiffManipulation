@@ -22,6 +22,10 @@ function outIm = tiffResizeProd(input,output,varargin)
 % -- interp : string
 %            the type of interpolation to use. Possible choices : 
 %            {'nearest','bilinear','bicubic','box','lanczos2','lanczos3'}
+% -- outfmt : any image format for output
+% -- istiled : if true, the tif output will be tiled (default: false)
+% -- export_json : if true, will export a json file containing the image
+% size of the inut and output files
 %
 %
 % Example of use
@@ -30,23 +34,26 @@ function outIm = tiffResizeProd(input,output,varargin)
 %   Original: CC, 02/01/2017
 
 
-% Parse inputs
+%%% Parse inputs
 p = inputParser;
-defaultRefIm  = '';
-defaultImSize = 1;  % scalar or vector
-defaultSufIm  = 'resize';
-defaultOutFmt = '';
-%
+defaultImSize  = 1;  % scalar or vector
 defaultInterp  = 'bicubic';
 expectedInterp = {'nearest','bilinear','bicubic','box','lanczos2','lanczos3'};
+defaultRefIm   = '';
+defaultSufIm   = 'resize';
+defaultOutFmt  = '';
+defaultIsTiled = false;
+defaultExportJson = true;
 %
 addRequired(p,'input',@ischar);
 addRequired(p,'output',@ischar);
+addParameter(p,'imSize',defaultImSize,@isnumeric);
+addParameter(p,'interp',defaultInterp,@(x) any(validatestring(x,expectedInterp)));
 addParameter(p,'refIm',defaultRefIm,@ischar);
 addParameter(p,'sufIm',defaultSufIm,@ischar);
 addParameter(p,'outfmt',defaultOutFmt,@ischar);
-addParameter(p,'imSize',defaultImSize,@isnumeric);
-addParameter(p,'interp',defaultInterp,@(x) any(validatestring(x,expectedInterp)));
+addParameter(p,'istiled',defaultIsTiled,@islogical);
+addParameter(p,'export_json',defaultExportJson,@islogical);
 %
 parse(p,input,output,varargin{:});
 %
@@ -118,7 +125,7 @@ for idxFile = 1 : nFiles
     InInfo  = imfinfo(filenames{idxFile});
     currDim = [InInfo.Height InInfo.Width];
     % Read the image: tiff or rest
-    if strcmp(InInfo.Format,'tif'),
+    if strcmp(InInfo.Format,'tif')
         %%% Load the Tiff Object
         tiffObj = Tiff(InInfo.Filename,'r');
         inData  = tiffObj.read();
@@ -179,7 +186,7 @@ for idxFile = 1 : nFiles
         end
     end
     %
-    if strcmp(extOut,'.tif')
+    if strcmp(extOut,'.tif') 
         newTiffObj = Tiff(outIm,'w');
         setTag(newTiffObj,'ImageLength',outputSize(1));
         setTag(newTiffObj,'ImageWidth',outputSize(2));
@@ -189,20 +196,43 @@ for idxFile = 1 : nFiles
         setTag(newTiffObj,'Compression',newTiffObj.Compression.(InInfo.Compression))
         setTag(newTiffObj,'MinSampleValue',min(InInfo.MinSampleValue));
         setTag(newTiffObj,'MaxSampleValue',max(InInfo.MaxSampleValue));
-        setTag(newTiffObj,'TileWidth',InInfo.TileWidth);
-        setTag(newTiffObj,'TileLength',InInfo.TileLength);
+        if p.Results.istiled
+            setTag(newTiffObj,'TileWidth',InInfo.TileWidth);
+            setTag(newTiffObj,'TileLength',InInfo.TileLength);
+        end
         setTag(newTiffObj,'PlanarConfiguration',newTiffObj.PlanarConfiguration.(InInfo.PlanarConfiguration));
         % Set the resolution meta data
         setTag(newTiffObj,'ResolutionUnit',newTiffObj.ResolutionUnit.(InInfo.ResolutionUnit));
-        x_res = InInfo.XResolution * outputSize(1) / InInfo.Height;
-        setTag(newTiffObj,'XResolution',x_res);
-        y_res = InInfo.YResolution * outputSize(2) / InInfo.Width;
-        setTag(newTiffObj,'YResolution',y_res);
+        if ~isempty(InInfo.XResolution)
+            x_res = InInfo.XResolution * outputSize(1) / InInfo.Height;
+            setTag(newTiffObj,'XResolution',x_res);
+        end
+        if ~isempty(InInfo.YResolution)
+            y_res = InInfo.YResolution * outputSize(2) / InInfo.Width;
+            setTag(newTiffObj,'YResolution',y_res);
+        end
         % Write and close
         newTiffObj.write(scaledData); %#ok<*AGROW>
         newTiffObj.close;
     else
         imwrite(scaledData,outIm);
+    end
+    if p.Results.export_json
+        %
+        ResizeInfo.input.height = InInfo.Height;
+        ResizeInfo.input.width  = InInfo.Width;
+        ResizeInfo.input.filename = InInfo.Filename;
+        %
+        ResizeInfo.output.height    = outputSize(1);
+        ResizeInfo.output.width     = outputSize(2);
+        ResizeInfo.output.filename  = outIm;
+        ResizeInfo.date             = datestr(now);
+        ResizeInfo.matlabver        = version;
+        ResizeInfo.username         = getenv('username');
+        ResizeInfo.options          = p.Results;
+        [pj,fj,~]=fileparts(outIm);
+        savejson('',ResizeInfo,fullfile(pj,sprintf('%s.json',fj)));
+        %
     end
     %
     % Done
