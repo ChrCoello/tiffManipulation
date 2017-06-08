@@ -1,5 +1,5 @@
 function outIm = tiffResizeProd(input,output,varargin)
-%tiffResize Change the size of a tiff image
+%tiffResize Change the size of an image (tiff or other)
 %   This function will change the size (column and row) of inputIm. The
 %   size of the new image will be harvested from the refIm or, if refIm is
 %   left empty, from the Option imSize. Output name is generated
@@ -229,6 +229,7 @@ for idxFile = 1 : nFiles
         ResizeInfo.date             = datestr(now);
         ResizeInfo.matlabver        = version;
         ResizeInfo.username         = getenv('username');
+        ResizeInfo.function         = mfilename;
         ResizeInfo.options          = p.Results;
         [pj,fj,~]=fileparts(outIm);
         savejson('',ResizeInfo,fullfile(pj,sprintf('%s.json',fj)));
