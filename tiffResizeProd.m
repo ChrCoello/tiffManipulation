@@ -4,10 +4,12 @@ function outIm = tiffResizeProd(input,output,varargin)
 %   size of the new image will be harvested from the refIm or, if refIm is
 %   left empty, from the Option imSize. Output name is generated
 %   automatically adding the suffix '_resize' if outputIm is left empty.
-% Required input/output description : 
+%
+%Description of the required arguments: 
 % -- input  : input can be an image file name or a folder
 % -- output : input can be an empty string (''), an image file name or a folder
-% Parameter description :
+% 
+%Description of the optional arguments:
 % -- imSize : scalar or 2x1 vector
 %            if scalar then the image x and y number of pixels will be modified to
 %            newX = imSize * X and newY = imSize * Y
@@ -16,22 +18,24 @@ function outIm = tiffResizeProd(input,output,varargin)
 %            value of the vector, the algorithm will rescale the non NaN to
 %            the desired size and resize the other while keeping the
 %            proportion of the image
-% -- refIm  : file name
-%            the size of the the resized image can be copied directly from
-%            a reference image defined with this option
 % -- interp : string
 %            the type of interpolation to use. Possible choices : 
 %            {'nearest','bilinear','bicubic','box','lanczos2','lanczos3'}
-% -- outfmt : any image format for output
+% -- refIm   : string (filename). The size of the the resized image can be copied 
+%               directly from a reference image defined with this option
+%               (default: '')
+% -- sufIm   : string. The suffix that is added at the end of the filename
+% -- outfmt  : string. Any image format for output (default: same as input)
 % -- istiled : if true, the tif output will be tiled (default: false)
 % -- export_json : if true, will export a json file containing the image
-% size of the inut and output files
+% size of the inut and output files (default: true)
 %
 %
 % Example of use
 % -- Resize the image called colbert.tif to have a width (column) of 1024 pixels 
 %   - outIm = tiffResizeProd('colbert.tif','colbert_1024.tif','imSize',[NaN 1024])
-%   Original: CC, 02/01/2017
+%
+%Original: CC, 02/01/2017
 
 
 %%% Parse inputs
