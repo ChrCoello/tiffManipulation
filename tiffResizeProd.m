@@ -163,16 +163,20 @@ for idxFile = 1 : nFiles
     scaledData = imresize(inData,outputSize,p.Results.interp);
     % Prepare and write output
     sufIm = p.Results.sufIm;
+    if ~isempty(sufIm)
+        sufIm = ['_' sufIm];
+    end
+    
     if ~isempty(p.Results.outfmt)
         extOut = ['.' p.Results.outfmt];
     else
         extOut = extInL;
     end
     if isdir(output)
-        outIm = fullfile(output,sprintf('%s_%s%s',fnInL,sufIm,extOut));
+        outIm = fullfile(output,sprintf('%s%s%s',fnInL,sufIm,extOut));
     else
         if isempty(output)
-            outIm = fullfile(pInL,sprintf('%s_%s%s',fnInL,sufIm,extOut));
+            outIm = fullfile(pInL,sprintf('%s%s%s',fnInL,sufIm,extOut));
         else
             [pOut,fOut,extOutt]=fileparts(output);
             if ~isempty(pOut) && ~exist(pOut,'dir')
