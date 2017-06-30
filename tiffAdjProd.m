@@ -44,8 +44,8 @@ addParameter(p,'suffix',suffix_dfl,@ischar);
 parse(p,input,output_dir,varargin{:});
 %
 %%% Check on the input
-if isdir(input),
-    if ~exist(input,'dir'),
+if isdir(input)
+    if ~exist(input,'dir')
         error('TiffAdjProd:MissingDir','The directory %s cannot be found',input);
     else
         % Search directory for .tiff or tif files
@@ -55,18 +55,18 @@ if isdir(input),
         filenames = fullfile(input,{InputContent(:).name}');
     end
 else
-    if ~exist(input,'file'),
+    if ~exist(input,'file')
         % Check if it was just the extension that was missing
         [pIn,fnIn,extIn] = fileparts(input);
-        if isempty(extIn),
+        if isempty(extIn)
             % Find the file
-            if isempty(pIn),
+            if isempty(pIn)
                 pIn = pwd;
             end
             DirContent = dir(pIn);
             fN = DirContent(~cellfun('isempty',strfind({DirContent(:).name},fnIn))).name;
             [pIn2,fnIn2,extIn2] = fileparts(fN);
-            if ismember(extIn2,{'tif','tiff'}),
+            if ismember(extIn2,{'tif','tiff'})
                 % Good that is what we wanted to find : tif extension
                 % forgotten in the input
                 filenames = {fullfile(pIn2,sprintf('%s%s',fnIn2,extIn2))};
@@ -81,26 +81,26 @@ else
         filenames = {input};
     end
 end
-if ~exist(output_dir,'dir'),
+if ~exist(output_dir,'dir')
     [s,mess,messid] = mkdir(output_dir);
-    if ~s,
+    if ~s
         error(messid,mess);
     end
 end
 
 %%% Loop on filenames
-if ~isempty(filenames),
+if ~isempty(filenames)
     %
     nFiles = length(filenames);
     tTot   = zeros(nFiles,1);
-    for idxFile = 1 : nFiles,
+    for idxFile = 1 : nFiles
         %
         [pF,filename,ext] = fileparts(filenames{idxFile});
         
         fprintf(1,'%s\n',repmat('-',1,50));
         fprintf(1,'Adjusting histogram for filename %s...\n',sprintf('%s%s',filename,ext));
         %%% Should really only have tif at this point, ut adding a last check
-        if ismember(ext,{'.tif','.tiff'}),
+        if ismember(ext,{'.tif','.tiff'})
             % Gather info on the file
             tiffInfo = imfinfo(fullfile(pF,sprintf('%s%s',filename,ext)));
         else
@@ -113,12 +113,12 @@ if ~isempty(filenames),
         % tiffData = tiffObj.read();
 
         %%% Create new tiff
-        if ~isempty(p.Results.suffix),
-            filename = sprintf('%s%s',filename,p.Results.suffix);
+        if ~isempty(p.Results.suffix)
+            output_fn = sprintf('%s%s',filename,p.Results.suffix);
         end
-        newFile = fullfile(output_dir,sprintf('%s.tif',filename));
+        newFile = fullfile(output_dir,sprintf('%s.tif',output_fn));
         %
-        newTiffObj = Tiff(newFile,'w');
+        newTiffObj = Tiff(newFile,'w8');
         setTag(newTiffObj,'ImageLength',tiffInfo.Height);
         setTag(newTiffObj,'ImageWidth',tiffInfo.Width);
         setTag(newTiffObj,'Photometric',newTiffObj.Photometric.(tiffInfo.PhotometricInterpretation));
@@ -155,27 +155,27 @@ if ~isempty(filenames),
 %         end
         newTiffObj.close;
         % Look for a txt file
-        if exist(fullfile(pF,[filename '.txt']),'file'),
+        if exist(fullfile(pF,[filename '.txt']),'file')
             copyfile(fullfile(pF,[filename '.txt']),...
-                fullfile(output_dir,sprintf('%s.txt',filename)));
+                fullfile(output_dir,sprintf('%s.txt',output_fn)));
         end
         % Write thumbnail if requested
-        if p.Results.make_thumb,
+        if p.Results.make_thumb
             thumbData = imresize(dataRaw,[256 256*tiffInfo.Width./tiffInfo.Height]);
-            if ~exist(fullfile(output_dir,'thumb'),'dir'),
+            if ~exist(fullfile(output_dir,'thumb'),'dir')
                 mkdir(fullfile(output_dir,'thumb'));
             end
-            imwrite(thumbData,fullfile(output_dir,'thumb',sprintf('%s_orig.png',filename)));
+            imwrite(thumbData,fullfile(output_dir,'thumb',sprintf('%s_orig.png',output_fn)));
             %
             thumbData = imresize(adjData,[256 256*tiffInfo.Width./tiffInfo.Height]);
-            imwrite(thumbData,fullfile(output_dir,'thumb',sprintf('%s.png',filename)));
+            imwrite(thumbData,fullfile(output_dir,'thumb',sprintf('%s.png',output_fn)));
         end
         % Write masks if requested
         if p.Results.make_mask,
             if ~exist(fullfile(output_dir,'masks'),'dir'),
                 mkdir(fullfile(output_dir,'masks'));
             end
-            imwrite(maskData,fullfile(output_dir,'masks',sprintf('%s.png',filename)));
+            imwrite(maskData,fullfile(output_dir,'masks',sprintf('%s.png',output_fn)));
         end
         twrite=toc;
         fprintf(1,' -- Image writing completed with success done in %0.2f seconds\n',twrite);
@@ -215,8 +215,8 @@ tic;
 %%%%%%%%%%%%%%%%%%%%%%%%
 % Find where the peak is
 % 
-xSum = xRed(1:end-4);
-ySum = yRed(1:end-4)+yBlue(1:end-4)+yGreen(1:end-4);
+xSum = xRed(ceil(end/2):end-4);
+ySum = yRed(ceil(end/2):end-4)+yBlue(ceil(end/2):end-4)+yGreen(ceil(end/2):end-4);
 %
 idxPic = xSum(ySum==max(ySum));
 %
@@ -229,7 +229,7 @@ bw2 = imopen(bw, SE);
 %
 bw4 = imfill(~bw2,'holes');
 %
-for iR = 1:3,
+for iR = 1:3
     tmp=slicedata(:,:,iR);
     tmp(bw4==0)=255;
     prcMin(iR) = single(prctile(tmp(:),sat_pix))/255;
