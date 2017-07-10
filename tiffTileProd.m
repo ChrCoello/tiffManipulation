@@ -100,7 +100,7 @@ if ~isempty(filenames),
         for iL = 1:tiffObj.numberOfTiles,
             tileDataRaw{iL}=tiffObj.readEncodedTile(iL); %#ok<*AGROW>
         end
-        %   
+        %
         tread=toc;
         %
         fprintf(1,' -- Tile reading completed with success in %0.2f seconds\n',tread);
@@ -123,10 +123,14 @@ if ~isempty(filenames),
             setTag(newTiffObj,'Compression',newTiffObj.Compression.(tiffInfo.Compression))
             setTag(newTiffObj,'MinSampleValue',min(tiffInfo.MinSampleValue));
             setTag(newTiffObj,'MaxSampleValue',max(tiffInfo.MaxSampleValue));
-%             setTag(newTiffObj,'TileWidth',tiffInfo.TileWidth);
-%             setTag(newTiffObj,'TileLength',tiffInfo.TileLength);
-            setTag(newTiffObj,'XResolution',tiffInfo.XResolution);
-            setTag(newTiffObj,'YResolution',tiffInfo.YResolution);
+            %             setTag(newTiffObj,'TileWidth',tiffInfo.TileWidth);
+            %             setTag(newTiffObj,'TileLength',tiffInfo.TileLength);
+            if ~isempty(tiffInfo.XResolution)
+                setTag(newTiffObj,'XResolution',tiffInfo.XResolution);
+            end
+            if ~isempty(tiffInfo.YResolution)
+                setTag(newTiffObj,'YResolution',tiffInfo.YResolution);
+            end
             setTag(newTiffObj,'ResolutionUnit',newTiffObj.ResolutionUnit.(tiffInfo.ResolutionUnit));
             setTag(newTiffObj,'PlanarConfiguration',newTiffObj.PlanarConfiguration.(tiffInfo.PlanarConfiguration));
             %
