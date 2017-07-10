@@ -115,6 +115,8 @@ if ~isempty(filenames)
         %%% Create new tiff
         if ~isempty(p.Results.suffix)
             output_fn = sprintf('%s%s',filename,p.Results.suffix);
+        else
+            output_fn = filename;
         end
         newFile = fullfile(output_dir,sprintf('%s.tif',output_fn));
         %
@@ -226,8 +228,10 @@ bw = im2bw(slicedata,(idxPicRed-15)/255);
 %
 SE = strel('disk', round(tiffInfo.Height/200), 4);
 bw2 = imopen(bw, SE);
+clear bw
 %
 bw4 = imfill(~bw2,'holes');
+clear bw2
 %
 for iR = 1:3
     tmp=slicedata(:,:,iR);
@@ -235,6 +239,7 @@ for iR = 1:3
     prcMin(iR) = single(prctile(tmp(:),sat_pix))/255;
     slicedata(:,:,iR) = tmp;
 end
+clear tmp
 prcMin = repmat(min(prcMin),1,3);
 prcMax = repmat(idxPic/255,1,3);
 % Scaling : to the imnum
