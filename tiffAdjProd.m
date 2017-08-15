@@ -49,10 +49,24 @@ if isdir(input)
         error('TiffAdjProd:MissingDir','The directory %s cannot be found',input);
     else
         % Search directory for .tiff or tif files
-        TwoF = dir(fullfile(input,'*.tiff'));
         OneF  = dir(fullfile(input,'*.tif'));
-        InputContent = cat(1,OneF,TwoF);
-        filenames = fullfile(input,{InputContent(:).name}');
+        TwoF = dir(fullfile(input,'*.tiff'));
+        if ~(size(OneF,1)||size(TwoF,1)),
+            %read the content of the folder
+            DirContent = dir(input);
+            % remove . and ..
+            DirContent(1:2)=[];
+            % pick up only folders
+            SubFolders = DirContent([DirContent(:).isdir]);
+            for iSF = 1 : length(SubFolders),
+                input_sub_dir = fullfile(input,SubFolders(iSF).name);
+                tiffAdjProd(input_sub_dir,output_dir,varargin{:});
+            end
+            return
+        else
+            InputContent = cat(1,OneF,TwoF);
+            filenames = fullfile(input,{InputContent(:).name}');
+        end
     end
 else
     if ~exist(input,'file')
@@ -120,7 +134,7 @@ if ~isempty(filenames)
         end
         newFile = fullfile(output_dir,sprintf('%s.tif',output_fn));
         %
-        newTiffObj = Tiff(newFile,'w8');
+        newTiffObj = Tiff(newFile,'w'); % 'w8' is for bigTiff, should be clever here
         setTag(newTiffObj,'ImageLength',tiffInfo.Height);
         setTag(newTiffObj,'ImageWidth',tiffInfo.Width);
         setTag(newTiffObj,'Photometric',newTiffObj.Photometric.(tiffInfo.PhotometricInterpretation));
