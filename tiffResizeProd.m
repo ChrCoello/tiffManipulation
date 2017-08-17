@@ -1,16 +1,16 @@
-function outIm = tiffResizeProd(input,output,varargin)
+function tiffResizeProd(input,output,varargin)
 % TIFFRESIZEPROD Change the size of an image (tiff or other)
 %This function will change the size (column and row) of inputIm. The
 %size of the new image will be harvested from the refIm or, if refIm is
 %left empty, from the Option imSize. Output name is generated
 %automatically adding the suffix '_resize' if outputIm is left empty.
 %
-%Description of the required arguments: 
+%Required input arguments: 
 % -- input  : input can be an image file name or a folder
 % -- output : input can be an empty string ('') to write in the same folder
 %             as input, an image file name or a folder
 % 
-%Description of the optional arguments:
+%Optional input arguments:
 % -- imSize : scalar or 2x1 vector
 %            if scalar then the image x and y number of pixels will be modified to
 %            newX = imSize * X and newY = imSize * Y
@@ -30,7 +30,6 @@ function outIm = tiffResizeProd(input,output,varargin)
 % -- istiled : if true, the tif output will be tiled (default: false)
 % -- export_json : if true, will export a json file containing the image
 % size of the inut and output files (default: false)
-%
 %
 % Examples of use
 % -- Resize the image called colbert.tif to have a width (column) of 1024 pixels 
