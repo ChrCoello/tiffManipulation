@@ -1,13 +1,14 @@
 function outIm = tiffResizeProd(input,output,varargin)
-%tiffResize Change the size of an image (tiff or other)
-%   This function will change the size (column and row) of inputIm. The
-%   size of the new image will be harvested from the refIm or, if refIm is
-%   left empty, from the Option imSize. Output name is generated
-%   automatically adding the suffix '_resize' if outputIm is left empty.
+% TIFFRESIZEPROD Change the size of an image (tiff or other)
+%This function will change the size (column and row) of inputIm. The
+%size of the new image will be harvested from the refIm or, if refIm is
+%left empty, from the Option imSize. Output name is generated
+%automatically adding the suffix '_resize' if outputIm is left empty.
 %
 %Description of the required arguments: 
 % -- input  : input can be an image file name or a folder
-% -- output : input can be an empty string (''), an image file name or a folder
+% -- output : input can be an empty string ('') to write in the same folder
+%             as input, an image file name or a folder
 % 
 %Description of the optional arguments:
 % -- imSize : scalar or 2x1 vector
@@ -28,15 +29,24 @@ function outIm = tiffResizeProd(input,output,varargin)
 % -- outfmt  : string. Any image format for output (default: same as input)
 % -- istiled : if true, the tif output will be tiled (default: false)
 % -- export_json : if true, will export a json file containing the image
-% size of the inut and output files (default: true)
+% size of the inut and output files (default: false)
 %
 %
-% Example of use
+% Examples of use
 % -- Resize the image called colbert.tif to have a width (column) of 1024 pixels 
 %   - outIm = tiffResizeProd('colbert.tif','colbert_1024.tif','imSize',[NaN 1024])
+% -- Reduce by a factor 2 all the images in folder C:\data\project_1\raw\ and
+%    place them in the folder C:\data\project_1\half_size\:
+%   - tiffResizeProd('C:\data\project_1\half_size\','imSize',0.5) 
+% -- Reduce all the tiff images in folder C:\data\project_1\raw\,
+%    to have a width (column) of 1024 pixels, change format to png 
+%    and place them in the folder C:\data\project_1\half_size\:
+%   - tiffResizeProd('C:\data\project_1\half_size\','imSize',[NaN 1024],'outfmt','png')
 %
-%Original: CC, 02/01/2017
-
+% 
+% Original: CC, 02 Feb 2017
+% Last modified : CC, 17 Aug 2017
+%
 
 %%% Parse inputs
 p = inputParser;
@@ -47,7 +57,7 @@ defaultRefIm   = '';
 defaultSufIm   = 'resize';
 defaultOutFmt  = '';
 defaultIsTiled = false;
-defaultExportJson = true;
+defaultExportJson = false;
 %
 addRequired(p,'input',@ischar);
 addRequired(p,'output',@ischar);
@@ -61,21 +71,21 @@ addParameter(p,'export_json',defaultExportJson,@islogical);
 %
 parse(p,input,output,varargin{:});
 %
-% Check existence of inputs
-%%% Check on the input
+%%% Check existence on the input
+% Pick up the default matlab image format list
 formatsAvail = imformats();
 if isdir(input)
     if ~exist(input,'dir')
         error('TiffAdjProd:MissingDir','The directory %s cannot be found',input);
     else
-        % Search directory for .tiff or tif files
+        % Search directory for image files
         InputContent = dir(input);
         listFiles = {InputContent(:).name}';
         % Beautiful way to get indexes of all the patterns in a cell string
         fun = @(s)~cellfun('isempty',strfind(listFiles,s));
         out = cellfun(fun,[formatsAvail(:).ext],'UniformOutput',false);
         idxToKeep = any(horzcat(out{:}),2);
-        %
+        % Keep only the images and create a list
         InputContentImages = InputContent(idxToKeep);
         filenames = fullfile(input,{InputContentImages(:).name}');
     end
@@ -91,7 +101,7 @@ else
             DirContent = dir(pIn);
             fN = DirContent(~cellfun('isempty',strfind({DirContent(:).name},fnIn))).name;
             [pIn2,fnIn2,extIn2] = fileparts(fN);           
-            if ismember(extIn2(2:end),[formatsAvail(:).ext]) % 2 for removeing the initial dot
+            if ismember(extIn2(2:end),[formatsAvail(:).ext]) % 2 for removing the initial dot
                 % Good that is what we wanted to find : tif extension
                 % forgotten in the input
                 filenames = {fullfile(pIn2,sprintf('%s%s',fnIn2,extIn2))};
@@ -106,7 +116,8 @@ else
         filenames = {input};
     end
 end
-% Check output
+
+%%% Check output
 if ~isempty(p.Results.refIm)
     if ~exist(p.Results.refIm,'file')
         error('MATLAB:resizeImages:FileNotFound','Couldn''t find the file %s',p.Results.refIm);
@@ -118,6 +129,7 @@ else
     scale_im = p.Results.imSize;
 end
 %
+%%% Loop on the the images
 nFiles = length(filenames);
 %
 for idxFile = 1 : nFiles
@@ -125,10 +137,10 @@ for idxFile = 1 : nFiles
     [pInL,fnInL,extInL] = fileparts(filenames{idxFile});
     fprintf(1,'%s\n',repmat('-',1,50));
     fprintf(1,'Resizing filename %s \n',sprintf('%s%s',fnInL,extInL));
-    % Get file information
+    %%% Get file information
     InInfo  = imfinfo(filenames{idxFile});
     currDim = [InInfo.Height InInfo.Width];
-    % Read the image: tiff or rest
+    %%% Read the image: tiff or rest
     if strcmp(InInfo.Format,'tif')
         %%% Load the Tiff Object
         tiffObj = Tiff(InInfo.Filename,'r');
@@ -136,16 +148,16 @@ for idxFile = 1 : nFiles
     else
         inData  = imread(filenames{idxFile});
     end
-    % Deal with the reshape
+    %%% Deal with the reshape
     if isempty(p.Results.refIm)
         outputSize = zeros(1,2);
-        if isscalar(scale_im),
+        if isscalar(scale_im)
             outputSize = currDim * scale_im;
         else
             % Deal with the input as vector
-            if all(isnan(scale_im)),
+            if all(isnan(scale_im))
                 outputSize = currDim;
-            elseif any(isnan(scale_im)),
+            elseif any(isnan(scale_im))
                 outputSize(isnan(scale_im))  = scale_im(~isnan(scale_im)) * currDim(isnan(scale_im))/currDim(~isnan(scale_im));
                 outputSize(~isnan(scale_im)) = scale_im(~isnan(scale_im));
             else
@@ -157,11 +169,11 @@ for idxFile = 1 : nFiles
     end
     % Be sure we have integers
     outputSize = ceil(outputSize);
-    % Reshape
+    %%% Reshape
     fprintf(1,'Input size : \n  height (lines) = %d\n  width (columns) = %d\n',InInfo.Height,InInfo.Width);
     fprintf(1,'Output size: \n  height (lines) = %d\n  width (columns) = %d\n',outputSize(1),outputSize(2));
     scaledData = imresize(inData,outputSize,p.Results.interp);
-    % Prepare and write output
+    %%% Prepare and write output
     sufIm = p.Results.sufIm;
     if ~isempty(sufIm)
         sufIm = ['_' sufIm];
@@ -193,7 +205,7 @@ for idxFile = 1 : nFiles
             end
         end
     end
-    %
+    %%% Write the tiff metadata information
     if strcmp(extOut,'.tif') 
         newTiffObj = Tiff(outIm,'w');
         setTag(newTiffObj,'ImageLength',outputSize(1));
@@ -225,6 +237,7 @@ for idxFile = 1 : nFiles
     else
         imwrite(scaledData,outIm);
     end
+    %%% Write JSON if necessary
     if p.Results.export_json
         %
         ResizeInfo.input.height = InInfo.Height;
