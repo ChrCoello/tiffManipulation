@@ -3,7 +3,6 @@ function tiffAdjProd(input,output_dir,varargin)
 %This function adjusts the contrast of the input tiff image to remove the
 %surrounding "grey" tiles. Only works with tiff files.
 %
-%Syntaxis: tiffAdjProd(filename,output_dir,logFile,varargin)
 %
 %Required input arguments:
 % -- input      : can be a tiff filename with or without extension, 
