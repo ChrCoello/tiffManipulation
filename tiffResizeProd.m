@@ -1,50 +1,51 @@
 function tiffResizeProd(input,output,varargin)
-% TIFFRESIZEPROD Change the size of an image (tiff or other)
-%This function will change the size (column and row) of inputIm. The
-%size of the new image will be harvested from the refIm or, if refIm is
-%left empty, from the Option imSize. Output name is generated
-%automatically adding the suffix '_resize' if outputIm is left empty.
+%TIFFRESIZEPROD Change the size of an image (tiff or other)
+%   This function will change the size (column and row) of inputIm. The
+%   size of the new image will be harvested from the refIm or, if refIm is
+%   left empty, from the Option imSize. Output name is generated
+%   automatically adding the suffix '_resize' if outputIm is left empty.
 %
-%Required input arguments: 
-% -- input  : input can be an image file name or a folder
-% -- output : input can be an empty string ('') to write in the same folder
-%             as input, an image file name or a folder
+%   Required input arguments: 
+%   -- input  : string. It can be an image file name or a folder
+%   -- output : string. It can be an empty string ('') to write in the 
+%               same folder as input, an image file name or a folder
 % 
-%Optional input arguments:
-% -- imSize : scalar or 2x1 vector
-%            if scalar then the image x and y number of pixels will be modified to
-%            newX = imSize * X and newY = imSize * Y
-%            if vector then the image will be resized to the size
-%            [imSize(1) imSize(2)]. If one enters NaN as one of the two
-%            value of the vector, the algorithm will rescale the non NaN to
-%            the desired size and resize the other while keeping the
-%            proportion of the image
-% -- interp : string
-%            the type of interpolation to use. Possible choices : 
-%            {'nearest','bilinear','bicubic','box','lanczos2','lanczos3'}
-% -- refIm   : string (filename). The size of the the resized image can be copied 
-%               directly from a reference image defined with this option
-%               (default: '')
-% -- sufIm   : string. The suffix that is added at the end of the filename
-% -- outfmt  : string. Any image format for output (default: same as input)
-% -- istiled : if true, the tif output will be tiled (default: false)
-% -- export_json : if true, will export a json file containing the image
-% size of the inut and output files (default: false)
+%   Optional input arguments:
+%   -- imSize : scalar or 2x1 vector
+%               if scalar then the image x and y number of pixels 
+%               will be modified to newX = imSize * X and newY = imSize * Y
+%               if vector then the image will be resized to the size
+%               [imSize(1) imSize(2)]. If one enters NaN as one of the two
+%               value of the vector, the algorithm will rescale the non NaN to
+%               the desired size and resize the other while keeping the
+%               proportion of the image
+%   -- interp : string
+%               the type of interpolation to use. Possible choices : 
+%               {'nearest','bilinear','bicubic','box','lanczos2','lanczos3'}
+%   -- refIm   : string (filename). The size of the the resized image can be copied 
+%                directly from a reference image defined with this option
+%                (default: '')
+%   -- suffix   : string. The suffix that is added at the end of the filename
+%   -- outfmt  : string. Any image format for output (default: same as input)
+%   -- istiled : boolean. if true, the tif output will be tiled (default: false)
+%   -- export_json : boolean. if true, will export a json file containing the image
+%                    size of the inut and output files (default: false)
 %
-% Examples of use
-% -- Resize the image called colbert.tif to have a width (column) of 1024 pixels 
-%   - outIm = tiffResizeProd('colbert.tif','colbert_1024.tif','imSize',[NaN 1024])
-% -- Reduce by a factor 2 all the images in folder C:\data\project_1\raw\ and
-%    place them in the folder C:\data\project_1\half_size\:
-%   - tiffResizeProd('C:\data\project_1\half_size\','imSize',0.5) 
-% -- Reduce all the tiff images in folder C:\data\project_1\raw\,
-%    to have a width (column) of 1024 pixels, change format to png 
-%    and place them in the folder C:\data\project_1\half_size\:
-%   - tiffResizeProd('C:\data\project_1\half_size\','imSize',[NaN 1024],'outfmt','png')
+%   Examples:
+%   -- Resize the image called Mtg01_bl1_4G8_s078.tif to have a width
+%      (column) of 1024 pixels: 
+%      >> tiffResizeProd('Mtg01_bl1_4G8_s078.tif','Mtg01_bl1_4G8_s078.png','imSize',[NaN 1024])
+%   -- Reduce by a factor 2 all the images in folder Z:\Matlab_scripts\test_data\
+%      and place them in the folder Z:\Matlab_scripts\test_data_half_size\:
+%      >> tiffResizeProd('Z:\Matlab_scripts\test_data\','Z:\Matlab_scripts\test_data_half_size\','imSize',0.5) 
+%   -- Reduce all the tiff images in folder Z:\Matlab_scripts\test_data\,
+%      to have a width (column) of 1024 pixels, change format to png, keeping the same image name 
+%      and place them in the folder Z:\Matlab_scripts\test_data_half_size\:
+%      >> tiffResizeProd('Z:\Matlab_scripts\test_data\','Z:\Matlab_scripts\test_data_half_size\',...
+%                       'imSize',[NaN 1024],'outfmt','png','suffix','');
 %
-% 
-% Original: CC, 02 Feb 2017
-% Last modified : CC, 17 Aug 2017
+%   Created:        CC, 02 Feb 2017
+%   Last modified : CC, 17 Aug 2017
 %
 
 %%% Parse inputs
@@ -53,7 +54,7 @@ defaultImSize  = 1;  % scalar or vector
 defaultInterp  = 'bicubic';
 expectedInterp = {'nearest','bilinear','bicubic','box','lanczos2','lanczos3'};
 defaultRefIm   = '';
-defaultSufIm   = 'resize';
+defaultSuffix   = 'resize';
 defaultOutFmt  = '';
 defaultIsTiled = false;
 defaultExportJson = false;
@@ -63,7 +64,7 @@ addRequired(p,'output',@ischar);
 addParameter(p,'imSize',defaultImSize,@isnumeric);
 addParameter(p,'interp',defaultInterp,@(x) any(validatestring(x,expectedInterp)));
 addParameter(p,'refIm',defaultRefIm,@ischar);
-addParameter(p,'sufIm',defaultSufIm,@ischar);
+addParameter(p,'suffix',defaultSuffix,@ischar);
 addParameter(p,'outfmt',defaultOutFmt,@ischar);
 addParameter(p,'istiled',defaultIsTiled,@islogical);
 addParameter(p,'export_json',defaultExportJson,@islogical);
@@ -116,7 +117,7 @@ else
     end
 end
 
-%%% Check output
+%%% Check reference image
 if ~isempty(p.Results.refIm)
     if ~exist(p.Results.refIm,'file')
         error('MATLAB:resizeImages:FileNotFound','Couldn''t find the file %s',p.Results.refIm);
@@ -140,6 +141,7 @@ for idxFile = 1 : nFiles
     InInfo  = imfinfo(filenames{idxFile});
     currDim = [InInfo.Height InInfo.Width];
     %%% Read the image: tiff or rest
+    fprintf(1,' -- Reading image ...\n');
     if strcmp(InInfo.Format,'tif')
         %%% Load the Tiff Object
         tiffObj = Tiff(InInfo.Filename,'r');
@@ -169,13 +171,15 @@ for idxFile = 1 : nFiles
     % Be sure we have integers
     outputSize = ceil(outputSize);
     %%% Reshape
-    fprintf(1,'Input size : \n  height (lines) = %d\n  width (columns) = %d\n',InInfo.Height,InInfo.Width);
-    fprintf(1,'Output size: \n  height (lines) = %d\n  width (columns) = %d\n',outputSize(1),outputSize(2));
+    fprintf(1,' -- Resizing image ...\n');
+    fprintf(1,' --- input size : \n  height (lines)  = %d\n  width (columns) = %d\n',InInfo.Height,InInfo.Width);
+    fprintf(1,' --- output size: \n  height (lines)  = %d\n  width (columns) = %d\n',outputSize(1),outputSize(2));
     scaledData = imresize(inData,outputSize,p.Results.interp);
     %%% Prepare and write output
-    sufIm = p.Results.sufIm;
-    if ~isempty(sufIm)
-        sufIm = ['_' sufIm];
+    fprintf(1,' -- Writing image ...\n');
+    suffix = p.Results.suffix;
+    if ~isempty(suffix)
+        suffix = ['_' suffix];
     end
     
     if ~isempty(p.Results.outfmt)
@@ -184,10 +188,13 @@ for idxFile = 1 : nFiles
         extOut = extInL;
     end
     if isdir(output)
-        outIm = fullfile(output,sprintf('%s%s%s',fnInL,sufIm,extOut));
+        if ~exist(output,'dir')
+            mkdir(output);
+        end
+        outIm = fullfile(output,sprintf('%s%s%s',fnInL,suffix,extOut));
     else
         if isempty(output)
-            outIm = fullfile(pInL,sprintf('%s%s%s',fnInL,sufIm,extOut));
+            outIm = fullfile(pInL,sprintf('%s%s%s',fnInL,suffix,extOut));
         else
             [pOut,fOut,extOutt]=fileparts(output);
             if ~isempty(pOut) && ~exist(pOut,'dir')
@@ -201,6 +208,7 @@ for idxFile = 1 : nFiles
                 outIm = fullfile(pOut,sprintf('%s%s',fOut,extOut));
             else
                 outIm = fullfile(pOut,sprintf('%s%s',fOut,extOutt));
+                extOut = extOutt;
             end
         end
     end

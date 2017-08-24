@@ -1,34 +1,47 @@
 function tiffAdjProd(input,output_dir,varargin)
+%TIFFADJPROD Adjust contrast of the input tiff image
+%This function adjusts the contrast of the input tiff image to remove the
+%surrounding "grey" tiles. Only works with tiff files.
 %
-% Function: adjust contrast of the input tiff image to remove the
-% surrounding "white" tiles
+%Syntaxis: tiffAdjProd(filename,output_dir,logFile,varargin)
 %
-% Syntaxis: tiffAdjProd(filename,output_dir,logFile,varargin)
+%Required input arguments:
+% -- input      : can be a tiff filename with or without extension, 
+%                 or a directory name
+% -- output_dir : location where the adjusted tiff will be stored   
 %
-% Inputs
-%   input (required): can be a tiff filename with or
-%   without extension, or a directory name
-%   output_dir (required):  location where the adjusted tiff will be stored   
+%Optional input parameters:
+% -- sat_pix       : number (0<sat_pix<1). 
+%                    Percentage of pixels we accept to saturate in the black 
+%                    part of the image (default: 0.05)
+% -- make_thumb    : boolean. save a thumbnail version of the input and  processed 
+%                   image (default: false)
+% -- make_mask     : boolean. save the binary image of the input mask (default:
+%                   false)
+% -- whole_section : boolean. if true, applies the contrast adjustment to the 
+%                    whole section. If false, only applies it to the
+%                    outside of the mask (default: true)
+% -- suffix        : string. The suffix that is added at the end of the filename
 %
-% Parameter
-%   sat_pix: percentage of pixels we accept to saturate in the black part of
-%   the image
-%   make_thumb: make thumbnail versions of the input and processed image
-%   make_mask: make binary image of the input mask
+% Examples:
+% 1/ Remove tiles of 'tg2576_m287_1D1_IV-1_s1.tif' and accept that 0.1% are
+%    saturated in the black part of the image and write it in the same folder as
+%    'tg2576_m287_1D1_IV-1_s1_adj.tif'
+%   >> tiffAdjProd('tg2576_m287_1D1_IV-1_s1.tif','','sat_pix',0.1);
+% 2/ Remove tiles of all tiff files in folder Z:\Matlab_scripts\test_data\
+%    and write the adjusted files in Z:\Matlab_scripts\test_data_adjusted\ with same
+%    filename
+%   >> tiffAdjProd('Z:\Matlab_scripts\test_data\','Z:\Matlab_scripts\test_data_adjusted\','suffix','');
 %
-% Example:
-% 1/ Adjust luminosity of 'S829_tg3898_s081.tif' and accept that 0.1% are
-% saturated in the black part of the image
-%   output_dir = 'C:\data\examples'
-%   tiffAdjProd('S829_tg3898_s081.tif',output_dir,'sat_pix',0.1);
-%
-%
+%   Created:        CC, 05 Feb 2017
+%   Last modified : CC, 17 Aug 2017
 %
 %%% Parse inputs
 p = inputParser;
 %
-make_thumb_dfl = true; 
-make_mask_dfl  = true; 
+make_thumb_dfl = false; 
+make_mask_dfl  = false; 
+whole_section_dfl = true;
 sat_pix_dfl    = 0.05; % in percent
 suffix_dfl     = '_adj';
 %
@@ -38,6 +51,7 @@ addRequired(p,'output_dir',@ischar);
 addParameter(p,'sat_pix',sat_pix_dfl,@isnumeric);
 addParameter(p,'make_thumb',make_thumb_dfl,@islogical);
 addParameter(p,'make_mask',make_mask_dfl,@islogical);
+addParameter(p,'whole_section',whole_section_dfl,@islogical);
 addParameter(p,'suffix',suffix_dfl,@ischar);
 %
 %%% Check inputs
@@ -51,14 +65,14 @@ if isdir(input)
         % Search directory for .tiff or tif files
         OneF  = dir(fullfile(input,'*.tif'));
         TwoF = dir(fullfile(input,'*.tiff'));
-        if ~(size(OneF,1)||size(TwoF,1)),
+        if ~(size(OneF,1)||size(TwoF,1))
             %read the content of the folder
             DirContent = dir(input);
             % remove . and ..
             DirContent(1:2)=[];
             % pick up only folders
             SubFolders = DirContent([DirContent(:).isdir]);
-            for iSF = 1 : length(SubFolders),
+            for iSF = 1 : length(SubFolders)
                 input_sub_dir = fullfile(input,SubFolders(iSF).name);
                 tiffAdjProd(input_sub_dir,output_dir,varargin{:});
             end
@@ -160,8 +174,9 @@ if ~isempty(filenames)
         fprintf(1,' -- Image reading completed with sucess in %0.2f seconds\n',tread);
         %
         % Adjust intensity per tile
-        sat_pix = p.Results.sat_pix;
-        [adjData,maskData,tileTime] = adjustIntensityBW(dataRaw,tiffInfo,sat_pix);
+        sat_pix       = p.Results.sat_pix;
+        whole_section = p.Results.whole_section;
+        [adjData,maskData,tileTime] = adjustIntensityBW(dataRaw,tiffInfo,sat_pix,whole_section);
         %
         fprintf(1,' -- Writing image ...\n');
 %
@@ -187,8 +202,8 @@ if ~isempty(filenames)
             imwrite(thumbData,fullfile(output_dir,'thumb',sprintf('%s.png',output_fn)));
         end
         % Write masks if requested
-        if p.Results.make_mask,
-            if ~exist(fullfile(output_dir,'masks'),'dir'),
+        if p.Results.make_mask
+            if ~exist(fullfile(output_dir,'masks'),'dir')
                 mkdir(fullfile(output_dir,'masks'));
             end
             imwrite(maskData,fullfile(output_dir,'masks',sprintf('%s.png',output_fn)));
@@ -205,12 +220,13 @@ if ~isempty(filenames)
     fprintf(1,'%s\n',repmat('-',1,50));
     fprintf(1,'All files were processed successfully in %0.2f minutes\n',...
         sum(tTot)/60);
+    fprintf(1,'%s\n',repmat('-',1,50));
     %
 end
 %
 return
 
-function [scaleddata,bw4,tileTime] = adjustIntensityBW(slicedata,tiffInfo,sat_pix)
+function [scaleddata,bw4,tileTime] = adjustIntensityBW(slicedata,tiffInfo,sat_pix,whole_section)
 % Description needed
 %
 fprintf(1,' -- Adjusting histogram ...\n');
@@ -256,9 +272,14 @@ end
 clear tmp
 prcMin = repmat(min(prcMin),1,3);
 prcMax = repmat(idxPic/255,1,3);
-% Scaling : to the imnum
+%%% scaling to the minimum and maximum found
+% either the min only or min and mask
 fprintf(1,' -- Scaling the minimum value to %0.2f and maximum to %0.2f\n',prcMin(1),prcMax(1));
-scaleddata = imadjust(slicedata,[prcMin; prcMax],[0 0 0;1 1 1]);
+if whole_section
+    scaleddata = imadjust(slicedata,[prcMin; prcMax],[0 0 0;1 1 1]);
+else
+    scaleddata = imadjust(slicedata,[prcMin; 1 1 1],[0 0 0;1 1 1]);
+end
 % %
 % 
 % hF = figure;
