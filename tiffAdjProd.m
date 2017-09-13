@@ -3,11 +3,11 @@ function tiffAdjProd(input,output_dir,varargin)
 %This function adjusts the contrast of the input tiff image to remove the
 %surrounding "grey" tiles. Only works with tiff files.
 %
-%
 %Required input arguments:
-% -- input      : can be a tiff filename with or without extension, 
-%                 or a directory name
-% -- output_dir : location where the adjusted tiff will be stored   
+% -- input      : string. Can be a tiff filename with or without extension, 
+%                 or a directory name, or a directory containing
+%                 exclusively directories
+% -- output_dir : string. Location where the adjusted tiff will be stored   
 %
 %Optional input parameters:
 % -- sat_pix       : number (0<sat_pix<1). 
@@ -37,23 +37,22 @@ function tiffAdjProd(input,output_dir,varargin)
 %
 %%% Parse inputs
 p = inputParser;
-%
+% Default optional inputs
 make_thumb_dfl = false; 
 make_mask_dfl  = false; 
 whole_section_dfl = true;
 sat_pix_dfl    = 0.05; % in percent
 suffix_dfl     = '_adj';
-%
-%%% Specify input type
+% Required inputs
 addRequired(p,'input',@ischar);
 addRequired(p,'output_dir',@ischar);
+% Optional inputs
 addParameter(p,'sat_pix',sat_pix_dfl,@isnumeric);
 addParameter(p,'make_thumb',make_thumb_dfl,@islogical);
 addParameter(p,'make_mask',make_mask_dfl,@islogical);
 addParameter(p,'whole_section',whole_section_dfl,@islogical);
 addParameter(p,'suffix',suffix_dfl,@ischar);
-%
-%%% Check inputs
+% Parse inputs
 parse(p,input,output_dir,varargin{:});
 %
 %%% Check on the input
