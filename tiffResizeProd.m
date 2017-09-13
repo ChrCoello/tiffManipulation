@@ -6,7 +6,8 @@ function tiffResizeProd(input,output,varargin)
 %   automatically adding the suffix '_resize' if outputIm is left empty.
 %
 %   Required input arguments: 
-%   -- input  : string. It can be an image file name or a folder
+%   -- input  : string. It can be an image file name or a folder , or a 
+%               directory containing exclusively directories
 %   -- output : string. It can be an empty string ('') to write in the 
 %               same folder as input, an image file name or a folder
 % 
@@ -50,6 +51,7 @@ function tiffResizeProd(input,output,varargin)
 
 %%% Parse inputs
 p = inputParser;
+% Default optional inputs
 defaultImSize  = 1;  % scalar or vector
 defaultInterp  = 'bicubic';
 expectedInterp = {'nearest','bilinear','bicubic','box','lanczos2','lanczos3'};
@@ -58,9 +60,10 @@ defaultSuffix   = 'resize';
 defaultOutFmt  = '';
 defaultIsTiled = false;
 defaultExportJson = false;
-%
+% Required inputs
 addRequired(p,'input',@ischar);
 addRequired(p,'output',@ischar);
+% Optional inputs
 addParameter(p,'imSize',defaultImSize,@isnumeric);
 addParameter(p,'interp',defaultInterp,@(x) any(validatestring(x,expectedInterp)));
 addParameter(p,'refIm',defaultRefIm,@ischar);
@@ -87,7 +90,19 @@ if isdir(input)
         idxToKeep = any(horzcat(out{:}),2);
         % Keep only the images and create a list
         InputContentImages = InputContent(idxToKeep);
-        filenames = fullfile(input,{InputContentImages(:).name}');
+        if ~(size(InputContentImages,1))
+            % remove . and ..
+            InputContent(1:2)=[];
+            % pick up only folders
+            SubFolders = InputContent([InputContent(:).isdir]);
+            for iSF = 1 : length(SubFolders)
+                input_sub_dir = fullfile(input,SubFolders(iSF).name);
+                tiffResizeProd(input_sub_dir,output,varargin{:});
+            end
+            return
+        else
+            filenames = fullfile(input,{InputContentImages(:).name}');
+        end
     end
 else
     % Check if it was just the extension that was missing
