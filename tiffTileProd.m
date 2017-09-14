@@ -1,4 +1,4 @@
-function tiffTileProd(input,output_dir)
+function tiffTileProd(input,output_dir,varargin)
 %
 % Function: open a tiff file and save as tiles. Tiles are predefined by the
 % width and height of the original images. Information of the tiles is
@@ -11,6 +11,8 @@ function tiffTileProd(input,output_dir)
 %   without extension
 %   output_dir (required):  location where the adjusted tiff(s) will be stored.
 %   The function will create a folder within output_dir
+% Otpional input
+%   tile_size : specify the tile size as vector [height width]
 %
 % Example:
 % 1/ Save a tiff file as tiles
@@ -21,16 +23,18 @@ function tiffTileProd(input,output_dir)
 %%% Parse inputs
 p = inputParser;
 %
+default_tile_size = [NaN NaN];
 %%% Specify input type
 addRequired(p,'input',@ischar);
 addRequired(p,'output_dir',@ischar);
+addParameter(p,'tile_size',default_tile_size,@isnumeric);
 %
 %%% Check inputs
-parse(p,input,output_dir);
+parse(p,input,output_dir,varargin{:});
 %
 %%% Check on the input
-if isdir(input),
-    if ~exist(input,'dir'),
+if isdir(input)
+    if ~exist(input,'dir')
         error('TiffAdjProd:MissingDir','The directory %s cannot be found',input);
     else
         % Search directory for .tiff or tif files
@@ -40,18 +44,18 @@ if isdir(input),
         filenames = fullfile(input,{InputContent(:).name}');
     end
 else
-    if ~exist(input,'file'),
+    if ~exist(input,'file')
         % Check if it was just the extension that was missing
         [pIn,fnIn,extIn] = fileparts(input);
-        if isempty(extIn),
+        if isempty(extIn)
             % Find the file
-            if isempty(pIn),
+            if isempty(pIn)
                 pIn = pwd;
             end
             DirContent = dir(pIn);
             fN = DirContent(~cellfun('isempty',strfind({DirContent(:).name},fnIn))).name;
             [pIn2,fnIn2,extIn2] = fileparts(fN);
-            if ismember(extIn2,{'tif','tiff'}),
+            if ismember(extIn2,{'tif','tiff'})
                 % Good that is what we wanted to find : tif extension
                 % forgotten in the input
                 filenames = {fullfile(pIn2,sprintf('%s%s',fnIn2,extIn2))};
@@ -66,25 +70,25 @@ else
         filenames = {input};
     end
 end
-if ~exist(output_dir,'dir'),
+if ~exist(output_dir,'dir')
     [s,mess,messid] = mkdir(output_dir);
-    if ~s,
+    if ~s
         error(messid,mess);
     end
 end
 
 %%% Loop on filenames
-if ~isempty(filenames),
+if ~isempty(filenames)
     %
     nFiles = length(filenames);
     tTot   = zeros(nFiles,1);
-    for idxFile = 1 : nFiles,
+    for idxFile = 1 : nFiles
         %
         [pF,filename,ext] = fileparts(filenames{idxFile});
         %
         fprintf(1,'%s\n',repmat('-',1,50));
         %%% Should really only have tif at this point, ut adding a last check
-        if ismember(ext,{'.tif','.tiff'}),
+        if ismember(ext,{'.tif','.tiff'})
             % Gather info on the file
             tiffInfo = imfinfo(fullfile(pF,sprintf('%s%s',filename,ext)));
         else
@@ -94,10 +98,11 @@ if ~isempty(filenames),
         %%% Load the Tiff Object
         tiffObj  = Tiff(tiffInfo.Filename,'r');
         %%% Read all the tiles
+
         fprintf(1,' -- Reading %d tiles from file %s...\n',tiffObj.numberOfTiles,filename);
         %
         tic
-        for iL = 1:tiffObj.numberOfTiles,
+        for iL = 1:tiffObj.numberOfTiles
             tileDataRaw{iL}=tiffObj.readEncodedTile(iL); %#ok<*AGROW>
         end
         %
@@ -105,13 +110,14 @@ if ~isempty(filenames),
         %
         fprintf(1,' -- Tile reading completed with success in %0.2f seconds\n',tread);
         %
+        %if all(isnan(p.Results.tile_size)),
         fprintf(1,' -- Writing %d tiles in separate files ...\n',tiffObj.numberOfTiles);
         %
         tic;
-        if ~exist(fullfile(output_dir,sprintf('%s_tiles',filename)),'dir'),
+        if ~exist(fullfile(output_dir,sprintf('%s_tiles',filename)),'dir')
             mkdir(fullfile(output_dir,sprintf('%s_tiles',filename)));
         end
-        for iL = 1:tiffObj.numberOfTiles,
+        for iL = 1:tiffObj.numberOfTiles
             %%% Create new tiff
             newFile = fullfile(output_dir,sprintf('%s_tiles',filename),sprintf('%s_tile%0.4d.tif',filename,iL));
             newTiffObj = Tiff(newFile,'w');
@@ -146,7 +152,7 @@ if ~isempty(filenames),
         fprintf(1,'%s\n',repmat('-',1,50));
         %
     end
-    if isdir(input),
+    if isdir(input)
         fprintf(1,'%s\n',repmat('-',1,50));
         fprintf(1,'All files in input folder were processed successfully in %0.2f minutes\n',...
             sum(tTot)/60);

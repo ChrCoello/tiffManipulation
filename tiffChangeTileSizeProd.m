@@ -13,8 +13,9 @@ function tiffChangeTileSizeProd(input,output_dir,tile_size)
 %   - tile_size : specify the tile size as vector [height width]
 %
 % Example:
-% 1/ Change tiling of filename '' with tiles of height  and width and store
-% the resulting tiff image in 
+% 1/ Change tiling of filename 'C:\data\test\cs\input\s1.tif' with tiles 
+% of height 2000 and width 2000 and store the resulting tiff image in
+% the folder 'C:\data\test\cs\retiled\'
 %      tiffChangeTileSizeProd('C:\data\test\cs\input\s1.tif',...
 %               'C:\data\test\cs\retiled\',[2000 2000]);
 %
