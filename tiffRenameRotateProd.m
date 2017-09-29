@@ -77,15 +77,15 @@ end
 serie_dsc = p.Results.serie_dsc;
 if isempty(serie_dsc)
     idx_sh = 1;
-    fprintf(1,['\nNo serie description was given as input.',...
-        ' Using the first sheet of the Excel file called %s for the renaming.'],sheets{idx_sh});
+    fprintf(1,['\nNo serie description was given as input.\n',...
+        ' Using the first sheet of the Excel file called %s for the renaming.\n'],sheets{idx_sh});
 else
     idx_sh = strcmp(sheets,serie_dsc);
     if any(idx_sh)
         fprintf(1,'The serie %s was found in the Excel file \n',serie_dsc);
     else
         error('tiffRenameProd:SheetnameNotFound',...
-            'The serie descriptor %s was not found as a valid sheet name in the Excel filename.',...
+            'The serie descriptor %s was not found as a valid sheet name in the Excel filename.\n',...
             serie_dsc);
     end
 end
@@ -132,18 +132,34 @@ end
 %%% Loop over the files to renamed (and rotated)
 n_fn = length(src_fn);
 fprintf(1,'\nProcessing %0.2d files from serie %s\n',n_fn,serie_sh);
+%%% Looking at the content of the directory for images
+formatsAvail = imformats;
+input_dir_cnt = dir(input_dir);
+listFiles = {input_dir_cnt(:).name}';
+% Beautiful way to get indexes of all the patterns in a cell string
+fun = @(s)~cellfun('isempty',strfind(listFiles,s));
+out = cellfun(fun,[formatsAvail(:).ext],'UniformOutput',false);
+idxToKeep = any(horzcat(out{:}),2);
+% Keep only the images and create a list
+input_dir_cnt_im = input_dir_cnt(idxToKeep);
 %
 for i_fn = 1 : n_fn
     tic
-    input_fn = fullfile(input_dir,[src_fn{i_fn} '.tif']);
-    if exist(input_fn,'file')
+    input_fn = input_dir_cnt_im(~cellfun('isempty',strfind({input_dir_cnt_im(:).name},src_fn{i_fn}))).name;
+    input_path = fullfile(input_dir,input_fn);
+    if exist(input_path,'file')
         fprintf('\n - Renaming and rotating file # %0.2d of %0.2d',i_fn,n_fn);
         % Rotation info
         rot_str   = rot_raw{i_fn};
         %
         if ~(isempty(rot_str) || (isnumeric(rot_str)&&rot_str==0) )
             fprintf('\n -- Reading');
-            [A,~,tiffInfo]= readTiff(input_fn);
+            [~,~,ext_in] = fileparts(input_path);
+            if strfind(ext_in,'tif')
+                [A,~,tiffInfo]= readTiff(input_path);
+            else
+                A = imread(input_path);
+            end
             %
             if ~isnumeric(rot_str)
                 if strcmp(rot_str,'FH')
@@ -176,10 +192,14 @@ for i_fn = 1 : n_fn
                 end
             end
             fprintf('\n -- Writing');
-            writeTiff(Ar,fullfile(output_dir,[tgt_fn{i_fn} '.tif']),tiffInfo);
+            if strfind(ext_in,'tif')
+                writeTiff(Ar,fullfile(output_dir,[tgt_fn{i_fn} '.tif']),tiffInfo);
+            else
+                imwrite(Ar,fullfile(output_dir,[tgt_fn{i_fn} '.tif']));
+            end
         else
             fprintf('\n -- Renaming only');
-            copyfile(input_fn,...
+            copyfile(input_path,...
                 fullfile(output_dir,[tgt_fn{i_fn} '.tif']));
         end
         % Copy the text file if existing
