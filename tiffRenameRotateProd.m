@@ -1,12 +1,12 @@
 function tiffRenameRotateProd(input_dir,output_dir,xls_fn,varargin)
 %TIFFRENAMEROTATEPROD Rename and rotate the input images
 %This function reads the list of the input files in an Excel file and
-%rename and rotate the input file. The outpu filename is also lsited in the
+%rename and rotate the input file. The output filename is also lsited in the
 %Excel filename.
 %
 %   Required input arguments:
-%   -- input_dir :
-%   -- output_dir:
+%   -- input_dir : string. The directory containing the input images listed in the Excel file.
+%   -- output_dir: string. Location where the renamed and/rotated images will be stored.
 %   -- xls_fn: Excel file capturing the user input. The format of this file
 %       is important and can be found in
 %       Z:\HBP_Curation\Operation procedures and
@@ -31,8 +31,7 @@ function tiffRenameRotateProd(input_dir,output_dir,xls_fn,varargin)
 %   angle defined in the Column 'Rotate' of the sheet '4G8' of the Excel
 %   file called Z:\Matlab_scripts\test_data\TE_001_RenamingTemplate.xlsx.
 %   Then the images are renamed using the information in the column
-%   'Renamed before Navigator'.
-%      and rename the:
+%   'Renamed before Navigator':
 %      >> tiffRenameRotateProd('Z:\Matlab_scripts\test_data\',...
 %       'Z:\Matlab_scripts\test_data\',...
 %       'Z:\Matlab_scripts\test_data\TE_001_RenamingTemplate.xlsx',...
@@ -119,13 +118,13 @@ else
 end
 if isempty(tgt_row) || isempty(tgt_col)
     error('tiffRenameProd:TargetColumnNotFound',...
-        'The target column headed %s was not found.',col_src_txt);
+        'The target column headed %s was not found.',col_tgt_txt);
 else
     tgt_fn = data_txt(tgt_row+1:end,tgt_col);
 end
 if isempty(rot_row) || isempty(rot_col)
     warning('tiffRenameProd:RotationColumnNotFound',...
-        'The rotation column headed %s was not found. Continuing without rotating',col_src_txt);
+        'The rotation column headed %s was not found. Continuing without rotating',col_rot_txt);
 else
     %     rot_txt = data_txt(rot_row+1:end,rot_col);
     rot_raw = data_raw(rot_row+1:end,rot_col);
