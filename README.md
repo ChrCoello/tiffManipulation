@@ -81,8 +81,8 @@ Function name: **tiffRenameResizeProd.m**
 Rename and/or rotate images. This function reads the list of the input files in an Excel file and rename and/or rotate these files. Rotation properties can be defined individually per file. The output filename is also read in the Excel file.
 
 ### Required input arguments:
-- input_dir: string. The directory containing the input images listed in the Excel file.
-- output_dir: string. Location where the renamed and/rotated images will be stored.
+- input_dir: string. The directory containing the input images listed in the Excel file. The program will work with any image format(tif, png, jpg, etc...).
+- output_dir: string. Location where the renamed and/rotated images will be stored. The output images have the same format as the input images.
 - xls_fn: Excel file capturing the user input. The format of this file is important and can be found in `TE_001_RenamingTemplate.xlsx`
 
 ### Optional input arguments:
@@ -97,12 +97,12 @@ Rename and/or rotate images. This function reads the list of the input files in 
 ### Examples:
 
 - Rotate all the images in folder Z:\Matlab_scripts\test_data\ with an angle defined in the Column 'Rotate' of the sheet '4G8' of the Excel file called `Z:\Matlab_scripts\test_data\TE_001_RenamingTemplate.xlsx`. Then the images are renamed using the information in the column 'Renamed before Navigator'.
-```Matlab_scripts
- >> tiffRenameRotateProd('Z:\Matlab_scripts\test_data\',...
-       'Z:\Matlab_scripts\test_data\',...       'Z:\Matlab_scripts\test_data\TE_001_RenamingTemplate.xlsx',...
-       'serie_dsc','4G8');
+```matlab
+>> tiffRenameRotateProd('Z:\Matlab_scripts\test_data\',...
+    'Z:\Matlab_scripts\test_data\',...       
+    'Z:\Matlab_scripts\test_data\TE_001_RenamingTemplate.xlsx',...
+    'serie_dsc','4G8');
 ```
-
 
 
 ## Creating tiles from a single image

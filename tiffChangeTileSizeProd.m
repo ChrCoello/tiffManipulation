@@ -1,19 +1,19 @@
 function tiffChangeTileSizeProd(input,output_dir,tile_size)
 %
-% Function: open a tiff file and save as tiles. Tiles are predefined by the
+% Function: open a tiff file and change tiles. Tiles are predefined by the
 % width and height of the original images. Information of the tiles is
 % found in the metadata of the tiff file
 %
-% Syntaxis: tiffAdjProd(input,output_dir,)
+% Syntaxis: tiffChangeTileSizeProd(input,output_dir,tile_size)
 %
 % Required inputs
-%   - filename: string. It can be a directory name or a tiff filename 
+%   - filename: string. It can be a directory name or a tiff filename
 %   - output_dir: string. Location where the retiled tiff(s) will be
 %                 stored. The empty string ('') is not recognized.
 %   - tile_size : specify the tile size as vector [height width]
 %
 % Example:
-% 1/ Change tiling of filename 'C:\data\test\cs\input\s1.tif' with tiles 
+% 1/ Change tiling of filename 'C:\data\test\cs\input\s1.tif' with tiles
 % of height 2000 and width 2000 and store the resulting tiff image in
 % the folder 'C:\data\test\cs\retiled\'
 %      tiffChangeTileSizeProd('C:\data\test\cs\input\s1.tif',...
@@ -99,7 +99,7 @@ if ~isempty(filenames)
             % Not a tiff, go to the next file
             continue
         end
-        
+
         %%% Load the Tiff Object
         tiffObj  = Tiff(tiffInfo.Filename,'r');
         %%% Read all the tiles
