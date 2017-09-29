@@ -1,5 +1,5 @@
 # tiffManipulation
-A set of Matlab function to manipulate high resolution microscopic images
+A set of Matlab functions to manipulate high resolution microscopic images. It focuses mainly on manipulating Tiff images.
 
 ## Resizing images
 Function name: **tiffResizeProd.m**
@@ -43,7 +43,66 @@ This function will change the size (column and row) of inputIm. The size of the 
 ```
 
 ## Removing tiles from the border of the microscopic section
+## Resizing images
+Function name: **tiffAdjProd.m**
+### High level description:
+Remove the grey tiles surrounding a microscopic section image (tiff or other)
+![Not adjusted](images/not_adj.png)  ![adjusted](images/adj.png)
+
+
+### Required input arguments:
+- input: string. Can be a tiff filename with or without extension, or a directory name, or a directory containing exclusively directories
+- output_dir: string. Location where the adjusted tiff will be stored
+
+### Optional input arguments:
+- sat_pix: number (0<sat_pix<1). Percentage of pixels we accept to saturate in the black part of the image (default: 0.05)
+- make_thumb: boolean. save a thumbnail version of the input and  processed image (default: false)
+- make_mask: boolean. save the binary image of the input mask (default: false)
+- whole_section: boolean. If true, applies the contrast adjustment to the whole section. If false, only applies it to the outside of the mask (default: true)
+- suffix: string. The suffix that is added at the end of the filename (default: '\_adj')
+
+### Examples:
+- Remove tiles of 'tg2576_m287_1D1_IV-1_s1.tif' and accept that 0.1% are saturated in the black part of the image and write it in the same folder as `tg2576_m287_1D1_IV-1_s1_adj.tif`
+
+```matlab
+>> tiffAdjProd('tg2576_m287_1D1_IV-1_s1.tif','','sat_pix',0.1);
+```
+
+- Remove tiles of all tiff files in folder `Z:\Matlab_scripts\test_data\` and write the adjusted files in `Z:\Matlab_scripts\test_data_adjusted\` with same filename
+
+```matlab
+>> tiffAdjProd('Z:\Matlab_scripts\test_data\','Z:\Matlab_scripts\test_data_adjusted\','suffix','');
+```
 
 ## Renaming and rotating images
+## Resizing images
+Function name: **tiffRenameResizeProd.m**
+### High level description:
+Rename and/or rotate images. This function reads the list of the input files in an Excel file and rename and/or rotate these files. Rotation properties can be defined individually per file. The output filename is also read in the Excel file.
+
+### Required input arguments:
+- input_dir: string. The directory containing the input images listed in the Excel file.
+- output_dir: string. Location where the renamed and/rotated images will be stored.
+- xls_fn: Excel file capturing the user input. The format of this file is important and can be found in `TE_001_RenamingTemplate.xlsx`
+
+### Optional input arguments:
+- serie_dsc: the name of the tab in the Excel file
+- col_src_txt: the header of the column containing the original section names (default: 'Scanning name')
+- col_tgt_txt: the header of the column containing the target section names (default:'Renamed before Navigator')
+- col_rot_txt: the header of the column containing the rotation information (default:'Rotation'). This column can contain four different entries:
+  - a number which captures the angle we want to rotate counterclock wise the image (angle in degrees)
+  - a string: 'FH' or 'FV': flip horizontally or flip vertically
+  - empty or 0: do nothing
+
+### Examples:
+
+- Rotate all the images in folder Z:\Matlab_scripts\test_data\ with an angle defined in the Column 'Rotate' of the sheet '4G8' of the Excel file called `Z:\Matlab_scripts\test_data\TE_001_RenamingTemplate.xlsx`. Then the images are renamed using the information in the column 'Renamed before Navigator'.
+```Matlab_scripts
+ >> tiffRenameRotateProd('Z:\Matlab_scripts\test_data\',...
+       'Z:\Matlab_scripts\test_data\',...       'Z:\Matlab_scripts\test_data\TE_001_RenamingTemplate.xlsx',...
+       'serie_dsc','4G8');
+```
+
+
 
 ## Creating tiles from a single image
