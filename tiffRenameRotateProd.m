@@ -142,74 +142,111 @@ out = cellfun(fun,[formatsAvail(:).ext],'UniformOutput',false);
 idxToKeep = any(horzcat(out{:}),2);
 % Keep only the images and create a list
 input_dir_cnt_im = input_dir_cnt(idxToKeep);
+% Try to find magick on the PC
+[ismagick,~]=system('magick -version');
 %
 for i_fn = 1 : n_fn
-    tic
+    tic;
     input_fn = input_dir_cnt_im(~cellfun('isempty',strfind({input_dir_cnt_im(:).name},src_fn{i_fn}))).name;
     input_path = fullfile(input_dir,input_fn);
+    %
+    [~,~,ext_in] = fileparts(input_path);
+    %
     if exist(input_path,'file')
         fprintf('\n - Renaming and rotating file # %0.2d of %0.2d',i_fn,n_fn);
         % Rotation info
         rot_str   = rot_raw{i_fn};
         %
         if ~(isempty(rot_str) || (isnumeric(rot_str)&&rot_str==0) )
-            fprintf('\n -- Reading');
-            [~,~,ext_in] = fileparts(input_path);
-            if strfind(ext_in,'tif')
-                [A,~,tiffInfo]= readTiff(input_path);
-            else
-                A = imread(input_path);
-            end
-            %
-            if ~isnumeric(rot_str)
-                if strcmp(rot_str,'FH')
-                    fprintf(1,'\n -- Flipping FH');
-                    Ar = flip(A,2);
-                elseif strcmp(rot_str,'FV')
-                    fprintf(1,'\n -- Flipping FV');
-                    Ar = flip(A,1);
+            if ismagick==0 && strfind(ext_in,'tif')
+                fprintf('\n -- Using Magick CLI for rotation')
+                if ~isnumeric(rot_str)
+                    if strcmp(rot_str,'FH')
+                        fprintf(1,'\n -- Flipping FH');
+                        cmd_flp = '-flop';
+                    elseif strcmp(rot_str,'FV')
+                        fprintf(1,'\n -- Flipping FV');
+                        cmd_flp = '-flip';
+                    else
+                        error('tiffRenameProd:RotatationInformationIncorrect',...
+                            'I didn''t recognize the rotation information');
+                    end
                 else
-                    error('tiffRenameProd:RotatationInformationIncorrect',...
-                        'I didn''t recognize the rotation information');
+                    cmd_flp = sprintf('%s %0.0f','-rotate',rot_str);
                 end
-            else % it is an angle rotate
-                m=memory;
-                fprintf(1,'\n -- Memory available: %.0f GBytes',m.MaxPossibleArrayBytes/10^9);
+                % do the work and call magik
+                tiffInfo = imfinfo(input_path);
+                cmd_m = sprintf('%s %s %s %s %s %s %s %s %s %s',...
+                    'magick','convert',...
+                    cmd_flp,...
+                    '-define','tiff:tile-geometry=256x256',...
+                    '+repage',input_path,...
+                    '-compress',lower(tiffInfo.Compression),...
+                    fullfile(output_dir,[tgt_fn{i_fn} '.tif']));
+                system(cmd_m);
+                %if we don't use magick, let's use matlab
+            else
+                fprintf('\n -- Using Matlab for rotation')
+                fprintf('\n -- Reading');
+                if strfind(ext_in,'tif')
+                    [A,~,tiffInfo]= readTiff(input_path);
+                else
+                    A = imread(input_path);
+                end
                 %
-                fprintf(1,'\n -- Rotating %.0f degrees CCW',rot_str);
-                Ar = imrotate(A,rot_str,'nearest','loose');
-                if ~ismember([-180 -90 0 90 180],rot_str)
-                    ss = size(A);
-                    clear A
-                    T = true(ss);
-                    fprintf('\n -- Cleaning borders');
+                if ~isnumeric(rot_str)
+                    if strcmp(rot_str,'FH')
+                        fprintf(1,'\n -- Flipping FH');
+                        Ar = flip(A,2);
+                    elseif strcmp(rot_str,'FV')
+                        fprintf(1,'\n -- Flipping FV');
+                        Ar = flip(A,1);
+                    else
+                        error('tiffRenameProd:RotatationInformationIncorrect',...
+                            'I didn''t recognize the rotation information');
+                    end
+                else % it is an angle rotate
                     m=memory;
                     fprintf(1,'\n -- Memory available: %.0f GBytes',m.MaxPossibleArrayBytes/10^9);
-                    Mrot = ~imrotate(T,rot_str);
-                    clear T
-                    Ar(Mrot&~imclearborder(Mrot)) = 255;
-                    clear Mrot
+                    %
+                    fprintf(1,'\n -- Rotating %.0f degrees CCW',rot_str);
+                    Ar = imrotate(A,rot_str,'nearest','loose');
+                    if ~ismember([-180 -90 0 90 180],rot_str)
+                        ss = size(A);
+                        clear A
+                        T = true(ss);
+                        fprintf('\n -- Cleaning borders');
+                        m=memory;
+                        fprintf(1,'\n -- Memory available: %.0f GBytes',m.MaxPossibleArrayBytes/10^9);
+                        Mrot = ~imrotate(T,rot_str);
+                        clear T
+                        Ar(Mrot&~imclearborder(Mrot)) = 255;
+                        clear Mrot
+                    end
                 end
-            end
-            fprintf('\n -- Writing');
-            if strfind(ext_in,'tif')
-                writeTiff(Ar,fullfile(output_dir,[tgt_fn{i_fn} '.tif']),tiffInfo);
-            else
-                imwrite(Ar,fullfile(output_dir,[tgt_fn{i_fn} '.tif']));
+                fprintf('\n -- Writing');
+                if strfind(ext_in,'tif')
+                    writeTiff(Ar,fullfile(output_dir,[tgt_fn{i_fn} '.tif']),tiffInfo);
+                else
+                    imwrite(Ar,fullfile(output_dir,[tgt_fn{i_fn} ext_in]));
+                end
             end
         else
             fprintf('\n -- Renaming only');
             copyfile(input_path,...
-                fullfile(output_dir,[tgt_fn{i_fn} '.tif']));
+                fullfile(output_dir,[tgt_fn{i_fn} ext_in]));
         end
-        % Copy the text file if existing
+        %
+        
         if exist(fullfile(input_dir,[src_fn{i_fn} '.txt']),'file')
             copyfile(fullfile(input_dir,[src_fn{i_fn} '.txt']),...
                 fullfile(output_dir,[tgt_fn{i_fn} '.txt']));
         end
+        fprintf('\n - Renaming and rotating file # %0.2d of %0.2d -- Done in %0.1f seconds',i_fn,n_fn,toc);
     else
         fprintf('\n - Skipping file # %0.2d of %0.2d -- not found in input folder',i_fn,n_fn);
     end
+    
 end
 fprintf(1,'\n Finish with success \n');
 %
