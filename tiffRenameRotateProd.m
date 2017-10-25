@@ -172,7 +172,7 @@ for i_fn = 1 : n_fn
                             'I didn''t recognize the rotation information');
                     end
                 else
-                    cmd_flp = sprintf('%s %0.0f','-rotate',rot_str);
+                    cmd_flp = sprintf('%s -%0.0f','-rotate',rot_str);
                 end
                 % do the work and call magik
                 tiffInfo = imfinfo(input_path);
