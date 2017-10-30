@@ -147,7 +147,15 @@ input_dir_cnt_im = input_dir_cnt(idxToKeep);
 %
 for i_fn = 1 : n_fn
     tic;
-    input_fn = input_dir_cnt_im(~cellfun('isempty',strfind({input_dir_cnt_im(:).name},src_fn{i_fn}))).name;
+    if any(~cellfun('isempty',strfind({input_dir_cnt_im(:).name},src_fn{i_fn})))
+        input_fn = input_dir_cnt_im(~cellfun('isempty',strfind({input_dir_cnt_im(:).name},src_fn{i_fn}))).name;
+    else
+        error('tiffRenameRotateProd:MissingFileName',...
+            'The file %s cannot be found.\n Please check that filename %s exist in folder %s',...
+            src_fn{i_fn},...
+            src_fn{i_fn},...
+            input_dir);
+    end
     input_path = fullfile(input_dir,input_fn);
     %
     [~,~,ext_in] = fileparts(input_path);
@@ -242,7 +250,7 @@ for i_fn = 1 : n_fn
             copyfile(fullfile(input_dir,[src_fn{i_fn} '.txt']),...
                 fullfile(output_dir,[tgt_fn{i_fn} '.txt']));
         end
-        fprintf('\n - Renaming and rotating file # %0.2d of %0.2d -- Done in %0.1f seconds',i_fn,n_fn,toc);
+        fprintf('\n - Renaming and rotating file # %0.2d of %0.2d -- Done in %0.1f seconds\n',i_fn,n_fn,toc);
     else
         fprintf('\n - Skipping file # %0.2d of %0.2d -- not found in input folder',i_fn,n_fn);
     end
