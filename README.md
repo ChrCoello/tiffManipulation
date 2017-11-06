@@ -106,3 +106,14 @@ Rename and/or rotate images. This function reads the list of the input files in 
 
 
 ## Creating tiles from a single image
+
+To customize the tile images you want to work with in Ilastik, it is
+more robust to do a two step approach :
+1. run tiffChangeTileSizeProd.m to modify the tile size to want you want
+2. run tiffTileProd.m to create a subfolder with image tiles as separate images
+3. run tiffRetileProd.m to retile the images in the subfolder in one big image
+These were the two commands I ran here with success on a test tiff file.
+```matlab
+> tiffChangeTileSizeProd('C:\data\test\cs\input\test.tif','C:\data\test\cs\output\',[2000 2000]);
+> tiffTileProd('C:\data\test\cs\output\test_retiled.tif','C:\data\test\cs\output');
+```

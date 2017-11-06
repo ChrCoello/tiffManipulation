@@ -4,10 +4,10 @@ function tiffTileProd(input,output_dir,varargin)
 % width and height of the original images. Information of the tiles is
 % found in the metadata of the tiff file
 %
-% Syntaxis: tiffAdjProd(filename,output_dir)
+% Syntaxis: tiffTileProd(input,output_dir,varargin)
 %
 % Inputs
-%   filename (required): can be a directory name or a tiff filename with or
+%   input (required): can be a directory name or a tiff filename with or
 %   without extension
 %   output_dir (required):  location where the adjusted tiff(s) will be stored.
 %   The function will create a folder within output_dir
