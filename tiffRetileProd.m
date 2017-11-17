@@ -1,29 +1,38 @@
 function tiffRetileProd(input,tiles_dir,output)
+%TIFFRETILEPROD concatenates small tiles into a single high resolution 
+%tiled Tiff image.
+%Output image are predefined by the width and height of the input. 
+%Information of the tiles is found in the metadata of the input.
 %
-% Function: concatenates tiles into a tiff file. Tiles are predefined by the
-% width and height of the original images. Information of the tiles is
-% found in the metadata of the tiff file
+%Syntaxis: tiffRetileProd(input,tiles_dir,output)
 %
-% Syntaxis: tiffRetileProd(input,tiles_dir,output)
+%Required input arguments:
+% -- input     : string. high resolution tiled Tiff image
+% -- tiles_dir : string. The folder containing the tiles. The
+% format of the tiles' filename should be XXX_tileYYYY.tif where 
+% XXX is any string and 
+% YYYY is a four digit number telling the index of the tile (i.e 0023) 
+% -- output    : string. The output image filename or location where the
+% retiled tiff will be stored. The function will create a folder within
+% output_dir
+% 
 %
-% Inputs
-%   input (required): can be a directory name or a tiff filename with or
-%   without extension
-%   output_dir (required):  location where the adjusted tiff(s) will be stored.
-%   The function will create a folder within output_dir
-% Otpional input
-%   tile_size : specify the tile size as vector [height width]
+%Use cases:
+% -- retile tifs into one tif 
+% -- retile pngs into one tif 
+% -- retile tiffs into one png 
+% -- retile pngs into one png
 %
-% Example:
-% 1/ Save a tiff file as tiles
-%       tiffTileProd('C:\data\histology\RawTiff\tg2576_m287_1D1_IV-1\tg2576_m287_1D1_IV-1_s3.tif',workdir);
+%Example:
+% 1/ Save a tiff file by combining tiles that were generated with
+%    tiffTileProd.m >> tiffRetileProd('C:\data\test\tg2576_m287.tif',...
+%       'C:\data\test\tg2576_m287_tiles\',...
+%       'C:\data\test\tg2576_m287_retiled.tif');
 %
-%
-%
+
 %%% Parse inputs
 p = inputParser;
 %
-% default_output_size = [NaN NaN];
 %%% Specify input type
 addRequired(p,'input',@ischar);
 addRequired(p,'tiles_dir',@ischar);
@@ -39,42 +48,42 @@ if ~exist(input,'file')
         'The file %s cannot be found',input);
 else
     % Get info of the input file
-    [pF,filename,ext] = fileparts(input);
+    [input_dir,input_fn,input_ext] = fileparts(input);
     %%% Should really only have tif at this point, ut adding a last check
-    if ismember(ext,{'.tif','.tiff'})
+    if ismember(input_ext,'.tif')
         % Gather info on the file
-        tiffInfo = imfinfo(fullfile(pF,sprintf('%s%s',filename,ext)));
+        tiffInfo = imfinfo(fullfile(input_dir,sprintf('%s%s',input_fn,input_ext)));
+        %%% get the Tiff Object info
+        tiffObj  = Tiff(tiffInfo.Filename,'r');
     else
-        error('tiffRetileProd:InputNotImage','Are you sure this an image?');
+        error('tiffRetileProd:InputNotTiff','Are you sure this is the original tiff image?');
     end
-    %%% Load the Tiff Object
-    tiffObj  = Tiff(tiffInfo.Filename,'r');
+    
 end
 if ~exist(tiles_dir,'dir')
     % there is an extension but the file doesn't exist
     error('TiffAdjProd:MissingFile',...
         'The folder %s cannot be found',tiles_dir);
 else
-    % Search directory for .tiff or tif files
-    TwoF = dir(fullfile(tiles_dir,'*.tiff'));
-    OneF = dir(fullfile(tiles_dir,'*.tif'));
-    InputContent = cat(1,OneF,TwoF);
+    % Search directory for .tif,.jpg or .png files
+    InputContent = cat(1,dir(fullfile(tiles_dir,'*.jpg')),...
+        dir(fullfile(tiles_dir,'*.png')),dir(fullfile(tiles_dir,'*.tif')));
     tiles_fn = fullfile(tiles_dir,{InputContent(:).name}');
 end
 if exist(output,'dir')
     % Get info of the input file
     out_dir = output;
-    out_fn  = [filename '_retiled'];
-    out_ext = ext;
+    out_fn  = [input_fn '_retiled'];
+    out_ext = input_ext;
 else
     % Get info of the input file
     [out_dir,out_fn,out_ext] = fileparts(output);
 end
 
 %%% Create the new output
-newFile = fullfile(out_dir,[out_fn out_ext]);
-newTiffObj = Tiff(newFile,'w');
-
+newTiffFile = fullfile(out_dir,[out_fn '.tif']);
+newTiffObj = Tiff(newTiffFile,'w');
+%
 setTag(newTiffObj,'ImageLength',tiffObj.getTag('ImageLength'));
 setTag(newTiffObj,'ImageWidth',tiffObj.getTag('ImageWidth'));
 setTag(newTiffObj,'Photometric',tiffObj.getTag('Photometric'));
@@ -94,36 +103,62 @@ setTag(newTiffObj,'PlanarConfiguration',newTiffObj.PlanarConfiguration.(tiffInfo
 
 
 %%% Loop on tiles
-
 nFiles = length(tiles_fn);
 
 for idxFile = 1 : nFiles
     %
     fprintf(1,'%s\n',repmat('-',1,50));
-    curr_tile_fn = tiles_fn{idxFile}; 
-    [~,curr_fn,~]=fileparts(curr_tile_fn);
+    %%% Remove Object Prediction from the file name if found
+    curr_tile_orig_fn = tiles_fn{idxFile};
+    [~,curr_fn,~] = fileparts(curr_tile_orig_fn);
+    if strfind(curr_fn,'Object Prediction')
+        curr_fn = curr_fn(1:strfind(curr_fn,'Object Prediction')-2);
+    end
+    %%% Get the tile number
     curr_tile_idx  = sscanf(curr_fn,[curr_fn(1:end-4) '%d']);
-    fprintf(1,' -- Tiling tile %d out of %d...\n',curr_tile_idx,nFiles);
-    
     %
-    curr_tile_data = imread(curr_tile_fn);
-    curr_tile_info = imfinfo(curr_tile_fn);
-    
+    fprintf(1,' -- Tiling tile %d out of %d...\n',curr_tile_idx,nFiles);
+    %
+    %%% Read the tile data and pad with zeros along dimension 3 (RGB) if
+    %%% necessary
+    [curr_tile_data,curr_cmap] = imread(curr_tile_orig_fn);
+    if size(curr_tile_data,3)==1
+        if isempty(curr_cmap)
+            if exist('glasbey.mat','file')
+                load('glasbey.mat');
+                curr_tile_data = ind2rgb8(curr_tile_data,glasbey);
+            else
+                curr_tile_data = ind2rgb8(curr_tile_data,[1 1 1;lines(255)]);
+            end
+        else
+            curr_tile_data = ind2rgb8(curr_tile_data,curr_cmap);
+        end    
+    end
+    %%% Set tile length just one time
     if idxFile==1
+        curr_tile_info = imfinfo(curr_tile_orig_fn);
         setTag(newTiffObj,'TileWidth',curr_tile_info.Width);
         setTag(newTiffObj,'TileLength',curr_tile_info.Height);
     end
     newTiffObj.writeEncodedTile(curr_tile_idx,curr_tile_data);
     %
-%     fprintf(1,' -- Tile reading completed with success in %0.2f seconds\n',tread);
-    %
-    %if all(isnan(p.Results.tile_size)),
-
-    
-
-    %
 end
-
+%
+fprintf(1,'%s\n',repmat('-',1,50));
+fprintf(1,'%s\n',repmat('-',1,50));
 newTiffObj.close;
+%
+if ~strcmp(out_ext,'.tif')
+   fprintf(1,'Converting output to %s\n',out_ext);
+   fprintf(1,'%s\n',repmat('-',1,50));
+   tmpT = Tiff(newTiffFile,'r');
+   T = tmpT.read();
+   tmpT.close();
+   imwrite(T,fullfile(out_dir,[out_fn out_ext])); 
+   delete(newTiffFile);   
+end
+%
+fprintf(1,'Tiling tiles finished with success\n');
+fprintf(1,'%s\n',repmat('-',1,50));
 %
 return

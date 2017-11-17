@@ -3,6 +3,8 @@ function tiffAdjProd(input,output_dir,varargin)
 %This function adjusts the contrast of the input tiff image to remove the
 %surrounding "grey" tiles. Only works with tiff files.
 %
+%Syntaxis: tiffAdjProd(input,output_dir)
+%
 %Required input arguments:
 % -- input      : string. Can be a tiff filename with or without extension, 
 %                 or a directory name, or a directory containing
@@ -22,7 +24,7 @@ function tiffAdjProd(input,output_dir,varargin)
 %                    outside of the mask (default: true)
 % -- suffix        : string. The suffix that is added at the end of the filename
 %
-% Examples:
+%Examples:
 % 1/ Remove tiles of 'tg2576_m287_1D1_IV-1_s1.tif' and accept that 0.1% are
 %    saturated in the black part of the image and write it in the same folder as
 %    'tg2576_m287_1D1_IV-1_s1_adj.tif'
@@ -32,9 +34,10 @@ function tiffAdjProd(input,output_dir,varargin)
 %    filename
 %   >> tiffAdjProd('Z:\Matlab_scripts\test_data\','Z:\Matlab_scripts\test_data_adjusted\','suffix','');
 %
-%   Created:        CC, 05 Feb 2017
-%   Last modified : CC, 17 Aug 2017
+%Created:        CC, 05 Feb 2017
+%Last modified : CC, 17 Aug 2017
 %
+
 %%% Parse inputs
 p = inputParser;
 % Default optional inputs

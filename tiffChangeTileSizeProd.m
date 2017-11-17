@@ -1,4 +1,6 @@
 function tiffChangeTileSizeProd(input,output_dir,tile_size)
+%TIFFTILEPROD change the size of the tiles in a high resolution tiled Tiff
+%image tiles
 %
 % Function: open a tiff file and change tiles. Tiles are predefined by the
 % width and height of the original images. Information of the tiles is
