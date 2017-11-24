@@ -144,6 +144,7 @@ idxToKeep = any(horzcat(out{:}),2);
 input_dir_cnt_im = input_dir_cnt(idxToKeep);
 % Try to find magick on the PC
 [ismagick,~]=system('magick -version');
+% ismagick = 1;
 %
 for i_fn = 1 : n_fn
     tic;
@@ -180,7 +181,11 @@ for i_fn = 1 : n_fn
                             'I didn''t recognize the rotation information');
                     end
                 else
-                    cmd_flp = sprintf('%s -%0.0f','-rotate',rot_str);
+                    if rot_str<0
+                        cmd_flp = sprintf('%s %0.0f','-rotate',abs(rot_str));
+                    else
+                        cmd_flp = sprintf('%s -%0.0f','-rotate',rot_str);
+                    end
                 end
                 % do the work and call magik
                 tiffInfo = imfinfo(input_path);

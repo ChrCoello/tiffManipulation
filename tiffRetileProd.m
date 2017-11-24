@@ -78,6 +78,9 @@ if exist(output,'dir')
 else
     % Get info of the input file
     [out_dir,out_fn,out_ext] = fileparts(output);
+    if ~exist(out_dir,'dir')
+        mkdir(out_dir);
+    end
 end
 
 %%% Create the new output
